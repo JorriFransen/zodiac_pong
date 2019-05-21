@@ -1,0 +1,303 @@
+
+c :: import c;
+glfw :: import glfw;
+glfw_keys :: import glfw_keys;
+gl :: import gl;
+
+using glfw;
+using glfw_keys;
+using gl;
+
+Vec2 :: struct
+{
+    x: float;
+    y: float;
+}
+
+Paddle :: struct
+{
+    size: Vec2;
+    pos : Vec2;
+    vel : Vec2;
+}
+
+Ball :: struct
+{
+    pos : Vec2;
+    dir : Vec2;
+    velocity : float;
+    diameter : float;
+}
+
+InputState :: struct
+{
+    dt: float;
+    player_speed: float;
+    exit_requested: bool;
+
+    keys     : [GLFWkey.GLFW_KEY_MENU]bool;
+    old_keys : [GLFWkey.GLFW_KEY_MENU]bool;
+}
+
+GameState :: struct
+{
+    window_size : Vec2;
+    input_state : InputState;
+
+    ball_speed : float;
+    ball       : Ball;
+
+    paddle_speed  : float;
+    player_paddle : Paddle;
+    ai_paddle     : Paddle;
+}
+
+main :: () -> int
+{
+    c.open_std_handles();
+
+    if (!glfwInit())
+    {
+        c.printf("glfwInit failed\n");
+        return 9;
+    }
+
+    width := 640;
+    height := 480;
+
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    window : *GLFWwindow = glfwCreateWindow(width, height, "Pong", null, null);
+    if (!window)
+    {
+        c.printf("glfwCreateWindow failed\n");
+        return 9;
+    }
+
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetErrorCallback(error_callback);
+
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
+    load(*glfwGetProcAddress);
+
+    glViewport(0, 0, width, height);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0.0, (:double)width, 0.0, (:double)height, 0.0, 1.0);
+
+    // glClearColor(0.1, 0.3, 0.5, 1.0);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+
+    gs : GameState;
+    glfwSetWindowUserPointer(window, *gs.input_state);
+
+    gs.window_size = { (:float)width, (:float)height };
+    gs.ball_speed = (:float)width;
+    gs.paddle_speed = (:float)height / 2.0;
+
+    gs.ball.pos = { gs.window_size.x / 2.0, gs.window_size.y / 2.0 };
+
+    player_width := (:float)width * 0.03;
+    player_height := (:float)height * 0.2;
+    half_player_width := player_width / 2.0;
+    half_player_height := player_height / 2.0;
+    player_x := 10.0 + half_player_width;
+    player_y := (:float)height / 2.0;
+    gs.player_paddle = create_paddle(player_width, player_height, player_x, player_y);
+
+    ai_x := (:float)width - (10.0 + half_player_width);
+    gs.ai_paddle = create_paddle(player_width, player_height, ai_x, player_y);
+
+    gs.ball.diameter = player_width;
+
+    last_frame_time : double = glfwGetTime();
+
+    while (!glfwWindowShouldClose(window) && !gs.input_state.exit_requested)
+    {
+        current_frame_time := glfwGetTime();
+        dt := (:float)(current_frame_time - last_frame_time);
+        last_frame_time = current_frame_time;
+
+        process_inputs(dt, *gs.input_state);
+        simulate(*gs);
+
+        draw(window, *gs);
+    }
+
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
+}
+
+key_callback :: (window: *GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void
+{
+    using glfw_keys;
+    using GLFWkey;
+    // using glfw_keys.GLFWKey;
+
+    input_data := (:*InputState)glfwGetWindowUserPointer(window);
+
+    if (input_data)
+    {
+        switch (action)
+        {
+            case GLFW_PRESS, GLFW_REPEAT:
+            {
+                input_data.keys[key] = true;
+            }
+
+            case GLFW_RELEASE:
+            {
+                // c.printf("Key released\n");
+                input_data.keys[key] = false;
+            }
+        }
+    }
+    else
+    {
+        c.fprintf(c.stderr, "No window user pointer!!!\n");
+    }
+}
+
+error_callback :: (error: int, description: *u8) -> void
+{
+    c.fprintf(c.stderr, "GLFW error:%lu:s\n", error, description);
+}
+
+create_paddle :: (width: float, height: float, x: float, y: float) -> Paddle
+{
+    result : Paddle;
+    result.size = { width, height };
+    result.pos = { x, y };
+    result.vel = { 0.0, 0.0 };
+
+    return result;
+}
+
+draw :: (window: *GLFWwindow, game_state : *GameState)
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    draw_ball(*game_state.ball);
+    draw_paddle(*game_state.player_paddle);
+    draw_paddle(*game_state.ai_paddle);
+
+    glfwSwapBuffers(window);
+}
+
+draw_ball :: (ball: *Ball)
+{
+    glPointSize(ball.diameter);
+
+    glBegin(GL_POINTS);
+    glVertex2f(ball.pos.x, ball.pos.y);
+    glEnd();
+}
+
+draw_paddle :: (paddle : *Paddle)
+{
+    bl : Vec2 = { paddle.pos.x - (paddle.size.x / 2.0), paddle.pos.y - (paddle.size.y / 2.0) };
+    br : Vec2 = { bl.x + paddle.size.x, bl.y };
+    tl : Vec2 = { bl.x, bl.y + paddle.size.y };
+    tr : Vec2 = { bl.x + paddle.size.x, bl.y + paddle.size.y };
+
+    glBegin(GL_TRIANGLES);
+    glVertex2f(bl.x, bl.y);
+    glVertex2f(tr.x, tr.y);
+    glVertex2f(tl.x, tl.y);
+
+    glVertex2f(bl.x, bl.y);
+    glVertex2f(br.x, br.y);
+    glVertex2f(tr.x, tr.y);
+    glEnd();
+}
+
+process_inputs :: (dt: float, input_state: *InputState)
+{
+    input_state.dt = dt;
+
+    glfwPollEvents();
+
+    using GLFWkey;
+
+    input_state.player_speed = 0.0;
+
+    if (is_key_down(input_state, GLFW_KEY_W))
+    {
+        input_state.player_speed = input_state.player_speed + 1.0;
+    }
+    if (is_key_down(input_state, GLFW_KEY_S))
+    {
+        input_state.player_speed = input_state.player_speed - 1.0;
+    }
+
+    if (is_key_down(input_state, GLFW_KEY_ESCAPE))
+    {
+        input_state.exit_requested = true;
+    }
+
+    for (i := 0; i < array_length(input_state.keys); i = i + 1)
+    {
+        input_state.old_keys[i] = input_state.keys[i];
+    }
+}
+
+simulate :: (game_state: *GameState)
+{
+    input := *game_state.input_state;
+    dt := input.dt;
+
+    player_speed := dt * input.player_speed * game_state.paddle_speed;
+    game_state.player_paddle.vel.y = player_speed;
+
+    simulate_ball(game_state, *game_state.ball);
+    simulate_paddle(game_state, *game_state.player_paddle);
+}
+
+simulate_ball :: (game_state: *GameState, ball: *Ball)
+{
+
+}
+
+simulate_paddle :: (game_state: *GameState, paddle: *Paddle)
+{
+    paddle.pos.y = paddle.pos.y + paddle.vel.y;
+
+    half_height := paddle.size.y / 2.0;
+
+    if (paddle.pos.y + half_height > game_state.window_size.y)
+    {
+        paddle.pos.y = game_state.window_size.y - half_height;
+    }
+    else if (paddle.pos.y - half_height < 0.0)
+    {
+        paddle.pos.y = half_height;
+    }
+}
+
+is_key_down :: (input_state: *InputState, key: GLFWkey) -> bool
+{
+    return input_state.keys[key];
+}
+
+is_key_pressed :: (input_state: *InputState, key: GLFWkey) -> bool
+{
+    return input_state.keys[key] && !input_state.old_keys[key];
+}
+
+is_key_released :: (input_state: *InputState, key: GLFWkey) -> bool
+{
+    return !input_state.keys[key] && input_state.old_keys[key];
+}
+
+vec2_add :: (a: Vec2, b: Vec2)
+{
+    r : Vec2 = { a.x + b.x, a.y + b.y };
+    return r;
+}
+
+vec2_mul :: (a: Vec2, b: float)
+{
+    r : Vec2 = { a.x * b, a.y * b };
+    return r;
+}
