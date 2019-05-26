@@ -4,29 +4,15 @@ glfw :: import glfw;
 glfw_keys :: import glfw_keys;
 gl :: import gl;
 
+linalg :: import linalg;
+using linalg;
+
+ssd :: import seven_seg_display;
+
 using _c;
 using glfw;
 using glfw_keys;
 using gl;
-
-Vec2 :: struct
-{
-    x: float;
-    y: float;
-}
-
-Vec3 :: struct
-{
-    x : float;
-    y : float;
-    z : float;
-}
-
-AABB :: struct
-{
-    min : Vec2;
-    max : Vec2;
-}
 
 Paddle :: struct
 {
@@ -58,11 +44,17 @@ GameState :: struct
     window_size : Vec2;
     input_state : InputState;
 
+    player_digit : ssd.Digit;
+    ai_digit     : ssd.Digit;
+
     ball       : Ball;
 
     paddle_speed  : float;
     player_paddle : Paddle;
     ai_paddle     : Paddle;
+
+    player_score : u32;
+    ai_score     : u32;
 }
 
 main :: () -> int
@@ -105,10 +97,22 @@ main :: () -> int
     glfwSetWindowUserPointer(window, *gs.input_state);
 
     gs.window_size = { (:float)width, (:float)height };
-    gs.paddle_speed = (:float)height / 2.0;
+
+
+    digit_width : float = 40.0;
+    digit_height := digit_width * 1.75;
+    digit_y := (:float)height - digit_height * 1.2;
+    player_digit_x := (:float)width / 2.0 - digit_width * 2.0;
+    ai_digit_x := (:float)width / 2.0 + digit_width;
+    gs.player_digit = ssd.create_digit(player_digit_x, digit_y, digit_width, digit_height,
+                                       (:u8)0);
+    gs.ai_digit = ssd.create_digit(ai_digit_x, digit_y, digit_width, digit_height,
+                                   (:u8)0);
+
+    gs.paddle_speed = (:float)height / 2.5;
 
     gs.ball.pos = { gs.window_size.x / 2.0, gs.window_size.y / 2.0 };
-    gs.ball.dir = vec2_normalize({ -1.0, -0.5 });
+    gs.ball.dir = vec2_normalize({ -1.0, -0.7 });
     gs.ball.speed = (:float)width * 0.5;
 
     player_width := (:float)width * 0.02;
@@ -197,6 +201,9 @@ draw :: (window: *GLFWwindow, game_state : *GameState)
     draw_paddle(*game_state.player_paddle);
     draw_paddle(*game_state.ai_paddle);
 
+    ssd.draw_digit(*game_state.player_digit);
+    ssd.draw_digit(*game_state.ai_digit);
+
     glfwSwapBuffers(window);
 }
 
@@ -248,7 +255,7 @@ draw_paddle :: (paddle : *Paddle)
 
 draw_rect :: (rect: AABB, color: Vec3)
 {
-    glColor4f(color.x, color.y, color.z);
+    glColor4f(color.x, color.y, color.z, 1.0);
 
     glBegin(GL_TRIANGLES);
     glVertex2f(rect.min.x, rect.min.y);
@@ -323,9 +330,6 @@ simulate_ball :: (game_state: *GameState, ball: *Ball)
     velocity := vec2_mul(ball.dir, ball.speed);
     velocity = vec2_mul(velocity, game_state.input_state.dt);
 
-
-    // printf("V: %f,%f\n", velocity.x, velocity.y);
-
     radius := ball.diameter / 2.0;
 
     simulate_ball_paddle_collision(game_state, ball, *velocity, *game_state.player_paddle);
@@ -339,11 +343,15 @@ simulate_ball :: (game_state: *GameState, ball: *Ball)
     {
         ball.pos.x = radius;
         ball.dir.x = -ball.dir.x;
+
+        ssd.set_digit(*game_state.ai_digit, game_state.ai_digit.value + (:u8)1);
     }
     else if (ball.pos.x + radius > game_state.window_size.x)
     {
         ball.pos.x = game_state.window_size.x - radius;
         ball.dir.x = -ball.dir.x;
+
+        ssd.set_digit(*game_state.player_digit, game_state.player_digit.value + (:u8)1);
     }
 
     if (ball.pos.y - radius < 0.0)
@@ -453,58 +461,3 @@ is_key_released :: (input_state: *InputState, key: GLFWkey) -> bool
     return !input_state.keys[key] && input_state.old_keys[key];
 }
 
-vec2_add :: (a: Vec2, b: Vec2)
-{
-    r : Vec2 = { a.x + b.x, a.y + b.y };
-    return r;
-}
-
-vec2_sub :: (a: Vec2, b: Vec2)
-{
-    r : Vec2 = { a.x - b.x, a.y - b.y };
-    return r;
-}
-
-vec2_mul :: (a: Vec2, b: float)
-{
-  r : Vec2 = { a.x * b, a.y * b };
-    return r;
-}
-
-vec2_normalize :: (v: Vec2)
-{
-    length := vec2_length(v);
-    v.x = v.x / length;
-    v.y = v.y / length;
-
-    return v;
-}
-
-vec2_length :: (v: Vec2)
-{
-    result : float = v.x * v.x + v.y * v.y;
-    return (:float)sqrt((:double)result);
-}
-
-line_segments_intersect :: (a: Vec2, b: Vec2, c: Vec2, d: Vec2, result: *Vec2) -> bool
-{
-    r : Vec2 = { b.x - a.x, b.y - a.y };
-    s : Vec2 = { d.x - c.x, d.y - c.y };
-
-    de := r.x * s.y - r.y * s.x;
-    u := ((c.x - a.x) * r.y - (c.y - a.y) * r.x) / de;
-    t := ((c.x - a.x) * s.y - (c.y - a.y) * s.x) / de;
-
-    if (0.0 <= u && u <= 1.0 && 0.0 <= t && t <= 1.0)
-    {
-        if (result)
-        {
-            res := vec2_mul(r, t);
-            res = vec2_add(res, a);
-            <result = res;
-        }
-        return true;
-    }
-
-    return false;
-}

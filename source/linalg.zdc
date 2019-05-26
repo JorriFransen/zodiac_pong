@@ -1,0 +1,77 @@
+_c :: import c;
+using _c;
+
+Vec2 :: struct
+{
+    x: float;
+    y: float;
+}
+
+Vec3 :: struct
+{
+    x : float;
+    y : float;
+    z : float;
+}
+
+AABB :: struct
+{
+    min : Vec2;
+    max : Vec2;
+}
+
+vec2_add :: (a: Vec2, b: Vec2)
+{
+    r : Vec2 = { a.x + b.x, a.y + b.y };
+    return r;
+}
+
+vec2_sub :: (a: Vec2, b: Vec2)
+{
+    r : Vec2 = { a.x - b.x, a.y - b.y };
+    return r;
+}
+
+vec2_mul :: (a: Vec2, b: float)
+{
+    r : Vec2 = { a.x * b, a.y * b };
+    return r;
+}
+
+vec2_normalize :: (v: Vec2)
+{
+    length := vec2_length(v);
+    v.x = v.x / length;
+    v.y = v.y / length;
+
+    return v;
+}
+
+vec2_length :: (v: Vec2)
+{
+    result : float = v.x * v.x + v.y * v.y;
+    return (:float)sqrt((:double)result);
+}
+
+line_segments_intersect :: (a: Vec2, b: Vec2, c: Vec2, d: Vec2, result: *Vec2) -> bool
+{
+    r : Vec2 = { b.x - a.x, b.y - a.y };
+    s : Vec2 = { d.x - c.x, d.y - c.y };
+
+    de := r.x * s.y - r.y * s.x;
+    u := ((c.x - a.x) * r.y - (c.y - a.y) * r.x) / de;
+    t := ((c.x - a.x) * s.y - (c.y - a.y) * s.x) / de;
+
+    if (0.0 <= u && u <= 1.0 && 0.0 <= t && t <= 1.0)
+    {
+        if (result)
+        {
+            res := vec2_mul(r, t);
+            res = vec2_add(res, a);
+            <result = res;
+        }
+        return true;
+    }
+
+    return false;
+}

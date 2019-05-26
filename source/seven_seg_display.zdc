@@ -1,0 +1,201 @@
+
+_la :: import linalg;
+using _la;
+
+gl :: import gl;
+
+Digit :: struct
+{
+    pos      : Vec2;
+    size     : Vec2;
+    segments : [7]bool;
+    value    : u8;
+}
+
+create_digit :: (x: float, y: float, width: float, height: float, digit_val: u8) -> Digit
+{
+    result : Digit;
+    result.pos = { x, y };
+    result.size = { width, height };
+
+    clear_digit(*result);
+    set_digit(*result, digit_val);
+
+    return result;
+}
+
+clear_digit :: (digit: *Digit)
+{
+    digit.value = 0;
+
+    digit.segments[0] = false;
+    digit.segments[1] = false;
+    digit.segments[2] = false;
+    digit.segments[3] = false;
+    digit.segments[4] = false;
+    digit.segments[5] = false;
+    digit.segments[6] = false;
+
+}
+
+set_digit :: (digit: *Digit, digit_val: u8)
+{
+    clear_digit(digit);
+
+    if (digit_val <= (:u8)9)
+    {
+        digit.value = digit_val;
+
+        switch (digit_val)
+        {
+            case (:u8)0:
+            {
+                digit.segments[0] = true;
+                digit.segments[1] = true;
+                digit.segments[2] = true;
+                digit.segments[3] = true;
+                digit.segments[4] = true;
+                digit.segments[5] = true;
+            }
+
+            case (:u8)1:
+            {
+                digit.segments[1] = true;
+                digit.segments[2] = true;
+            }
+
+            case (:u8)2:
+            {
+                digit.segments[0] = true;
+                digit.segments[2] = true;
+                digit.segments[3] = true;
+                digit.segments[5] = true;
+                digit.segments[6] = true;
+            }
+
+            case (:u8)3:
+            {
+                digit.segments[0] = true;
+                digit.segments[1] = true;
+                digit.segments[2] = true;
+                digit.segments[3] = true;
+                digit.segments[6] = true;
+            }
+
+            case (:u8)4:
+            {
+                digit.segments[1] = true;
+                digit.segments[2] = true;
+                digit.segments[4] = true;
+                digit.segments[6] = true;
+            }
+
+            case (:u8)5:
+            {
+                digit.segments[0] = true;
+                digit.segments[1] = true;
+                digit.segments[3] = true;
+                digit.segments[4] = true;
+                digit.segments[6] = true;
+            }
+
+            case (:u8)6:
+            {
+                digit.segments[0] = true;
+                digit.segments[1] = true;
+                digit.segments[3] = true;
+                digit.segments[4] = true;
+                digit.segments[5] = true;
+                digit.segments[6] = true;
+            }
+
+            case (:u8)7:
+            {
+                digit.segments[1] = true;
+                digit.segments[2] = true;
+                digit.segments[3] = true;
+            }
+
+            case (:u8)8:
+            {
+                digit.segments[0] = true;
+                digit.segments[1] = true;
+                digit.segments[2] = true;
+                digit.segments[3] = true;
+                digit.segments[4] = true;
+                digit.segments[5] = true;
+                digit.segments[6] = true;
+            }
+
+            case (:u8)9:
+            {
+                digit.segments[0] = true;
+                digit.segments[1] = true;
+                digit.segments[2] = true;
+                digit.segments[3] = true;
+                digit.segments[4] = true;
+                digit.segments[6] = true;
+            }
+        }
+    }
+}
+
+draw_digit :: (digit: *Digit)
+{
+    segment_width : float = 7.5;
+
+    bl  : Vec2 = digit.pos;
+    br  : Vec2 = { bl.x + digit.size.x, bl.y };
+    tr  : Vec2 = { br.x, br.y + digit.size.y };
+    tl  : Vec2 = { bl.x, bl.y + digit.size.y };
+    hri : Vec2 = { br.x - segment_width, br.y + (digit.size.y / 2.0) };
+    hli : Vec2 = { bl.x + segment_width, bl.y + (digit.size.y / 2.0) };
+
+    white : Vec3 = { 1.0, 1.0, 1.0 };
+    gray : Vec3 = { 0.3, 0.3, 0.3 };
+
+    p2 : Vec2 = { br.x, br.y + segment_width };
+    p3 : Vec2 = { tr.x, tr.y - segment_width }
+    p4 : Vec2 = { tl.x, tl.y - segment_width };
+    p5 : Vec2 = { bl.x, bl.y + segment_width };
+    p6 : Vec2 = { hli.x, hli.y + segment_width / 2.0 };
+    p7 : Vec2 = { hri.x, hri.y - segment_width / 2.0 };
+
+    if (digit.segments[0]) draw_rect( { bl, p2 }, white);
+    else draw_rect ( { bl, p2 }, gray);
+
+    if (digit.segments[1]) draw_rect( { p2, hri }, white);
+    else draw_rect ( { p2, hri }, gray);
+
+    if (digit.segments[2]) draw_rect( { hri, p3 }, white);
+    else draw_rect ( { hri, p3 }, gray);
+
+    if (digit.segments[3]) draw_rect( { p3, tl }, white);
+    else draw_rect ( { p3, tl }, gray);
+
+    if (digit.segments[4]) draw_rect( { p4, hli }, white);
+    else draw_rect ( { p4, hli }, gray);
+
+    if (digit.segments[5]) draw_rect( { hli, p5 }, white);
+    else draw_rect ( { hli, p5 }, gray);
+
+    if (digit.segments[6]) draw_rect( { p6, p7 }, white);
+    else draw_rect ( { p6, p7 }, gray);
+}
+
+draw_rect :: (rect: AABB, color: Vec3)
+{
+    using gl;
+
+    glColor4f(color.x, color.y, color.z, 1.0);
+
+    glBegin(GL_TRIANGLES);
+    glVertex2f(rect.min.x, rect.min.y);
+    glVertex2f(rect.max.x, rect.max.y);
+    glVertex2f(rect.min.x, rect.max.y);
+
+    glVertex2f(rect.min.x, rect.min.y);
+    glVertex2f(rect.max.x, rect.min.y);
+    glVertex2f(rect.max.x, rect.max.y);
+    glEnd();
+}
