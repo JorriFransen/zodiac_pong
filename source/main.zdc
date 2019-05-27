@@ -14,6 +14,8 @@ using glfw;
 using glfw_keys;
 using gl;
 
+rand :: import random;
+
 Paddle :: struct
 {
     size: Vec2;
@@ -27,9 +29,10 @@ Ball :: struct
     dir : Vec2;
     speed : float;
     diameter : float;
+    visible : bool;
 }
 
-InputState :: struct
+InputData :: struct
 {
     dt: float;
     player_speed: float;
@@ -39,10 +42,24 @@ InputState :: struct
     old_keys : [GLFWkey.GLFW_KEY_MENU]bool;
 }
 
-GameState :: struct
+GameState :: enum
+{
+    PLAYING;
+    SPAWNING;
+}
+
+SpawnDirection :: enum
+{
+    RANDOM;
+    PLAYER;
+    AI;
+}
+
+GameData :: struct
 {
     window_size : Vec2;
-    input_state : InputState;
+    game_state  : GameState;
+    input_state : InputData;
 
     player_digit : ssd.Digit;
     ai_digit     : ssd.Digit;
@@ -55,6 +72,13 @@ GameState :: struct
 
     player_score : u32;
     ai_score     : u32;
+
+    spawn_direction : SpawnDirection;
+
+    spawn_timer  : float;
+    flash_timer  : float;
+
+    rng : rand.RandomGenerator;
 }
 
 main :: () -> int
@@ -93,11 +117,19 @@ main :: () -> int
     // glClearColor(0.1, 0.3, 0.5, 1.0);
     glClearColor(0.0, 0.0, 0.0, 0.0);
 
-    gs : GameState;
+    gs : GameData;
     glfwSetWindowUserPointer(window, *gs.input_state);
+
+    gs.game_state = GameState.SPAWNING;
+    gs.spawn_direction = SpawnDirection.RANDOM;
 
     gs.window_size = { (:float)width, (:float)height };
 
+    gs.rng = rand.create(1234);
+    // for (i := 0; i < 100; i = i + 1)
+    // {
+    //     printf("%f\n", rand.next_float_01(*gs.rng));
+    // }
 
     digit_width : float = 40.0;
     digit_height := digit_width * 1.75;
@@ -114,6 +146,8 @@ main :: () -> int
     gs.ball.pos = { gs.window_size.x / 2.0, gs.window_size.y / 2.0 };
     gs.ball.dir = vec2_normalize({ -1.0, -0.7 });
     gs.ball.speed = (:float)width * 0.5;
+    gs.ball.visible = true;
+    gs.spawn_timer = 0.0;
 
     player_width := (:float)width * 0.02;
     player_height := (:float)height * 0.1;
@@ -152,7 +186,7 @@ key_callback :: (window: *GLFWwindow, key: int, scancode: int, action: int, mods
     using GLFWkey;
     // using glfw_keys.GLFWKey;
 
-    input_data := (:*InputState)glfwGetWindowUserPointer(window);
+    input_data := (:*InputData)glfwGetWindowUserPointer(window);
 
     if (input_data)
     {
@@ -191,7 +225,7 @@ create_paddle :: (width: float, height: float, x: float, y: float) -> Paddle
     return result;
 }
 
-draw :: (window: *GLFWwindow, game_state : *GameState)
+draw :: (window: *GLFWwindow, game_state : *GameData)
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -207,7 +241,7 @@ draw :: (window: *GLFWwindow, game_state : *GameState)
     glfwSwapBuffers(window);
 }
 
-draw_center_line :: (gs: *GameState)
+draw_center_line :: (gs: *GameData)
 {
     center_x := gs.window_size.x / 2.0;
 
@@ -236,13 +270,16 @@ draw_center_line :: (gs: *GameState)
 
 draw_ball :: (ball: *Ball)
 {
-    glPointSize(ball.diameter);
+    if (ball.visible)
+    {
+        glPointSize(ball.diameter);
 
-    glColor4f(1.0, 1.0, 1.0, 1.0);
+        glColor4f(1.0, 1.0, 1.0, 1.0);
 
-    glBegin(GL_POINTS);
-    glVertex2f(ball.pos.x, ball.pos.y);
-    glEnd();
+        glBegin(GL_POINTS);
+        glVertex2f(ball.pos.x, ball.pos.y);
+        glEnd();
+    }
 }
 
 draw_paddle :: (paddle : *Paddle)
@@ -268,7 +305,7 @@ draw_rect :: (rect: AABB, color: Vec3)
     glEnd();
 }
 
-process_inputs :: (dt: float, input_state: *InputState)
+process_inputs :: (dt: float, input_state: *InputData)
 {
     input_state.dt = dt;
 
@@ -298,75 +335,114 @@ process_inputs :: (dt: float, input_state: *InputState)
     }
 }
 
-simulate :: (game_state: *GameState)
+simulate :: (game_data: *GameData)
 {
-    input := *game_state.input_state;
+    input := *game_data.input_state;
     dt := input.dt;
 
+    using GameState;
 
-    simulate_ball(game_state, *game_state.ball);
+    simulate_ball(game_data, *game_data.ball);
 
-    player_speed := dt * input.player_speed * game_state.paddle_speed;
-    game_state.player_paddle.vel.y = player_speed;
-    simulate_paddle(game_state, *game_state.player_paddle);
-
-    ai_dir := 0.0;
-    if (game_state.ai_paddle.pos.y > game_state.ball.pos.y)
+    switch (game_data.game_state)
     {
-        ai_dir = -1.0;
-    }
-    else
-    {
-        ai_dir = 1.0;
+        case PLAYING:
+        {
+            player_speed := dt * input.player_speed * game_data.paddle_speed;
+            game_data.player_paddle.vel.y = player_speed;
+            simulate_paddle(game_data, *game_data.player_paddle);
+
+            ai_dir := 0.0;
+            if (game_data.ai_paddle.pos.y > game_data.ball.pos.y)
+            {
+                ai_dir = -1.0;
+            }
+            else
+            {
+                ai_dir = 1.0;
+            }
+
+            ai_speed := dt * ai_dir * game_data.paddle_speed;
+            game_data.ai_paddle.vel.y = ai_speed;
+            simulate_paddle(game_data, *game_data.ai_paddle);
+        }
     }
 
-    ai_speed := dt * ai_dir * game_state.paddle_speed;
-    game_state.ai_paddle.vel.y = ai_speed;
-    simulate_paddle(game_state, *game_state.ai_paddle);
 }
 
-simulate_ball :: (game_state: *GameState, ball: *Ball)
+simulate_ball :: (game_data: *GameData, ball: *Ball)
 {
-    velocity := vec2_mul(ball.dir, ball.speed);
-    velocity = vec2_mul(velocity, game_state.input_state.dt);
+    using GameState;
+    input_state := *game_data.input_state;
 
-    radius := ball.diameter / 2.0;
-
-    simulate_ball_paddle_collision(game_state, ball, *velocity, *game_state.player_paddle);
-    simulate_ball_paddle_collision(game_state, ball, *velocity, *game_state.ai_paddle);
-
-    ball.pos.x = ball.pos.x + velocity.x;
-
-    ball.pos.y = ball.pos.y + velocity.y;
-
-    if (ball.pos.x - radius < 0.0)
+    switch (game_data.game_state)
     {
-        ball.pos.x = radius;
-        ball.dir.x = -ball.dir.x;
+        case PLAYING:
+        {
+            velocity := vec2_mul(ball.dir, ball.speed);
+            velocity = vec2_mul(velocity, game_data.input_state.dt);
 
-        ssd.set_digit(*game_state.ai_digit, game_state.ai_digit.value + (:u8)1);
-    }
-    else if (ball.pos.x + radius > game_state.window_size.x)
-    {
-        ball.pos.x = game_state.window_size.x - radius;
-        ball.dir.x = -ball.dir.x;
+            radius := ball.diameter / 2.0;
 
-        ssd.set_digit(*game_state.player_digit, game_state.player_digit.value + (:u8)1);
-    }
+            simulate_ball_paddle_collision(game_data, ball, *velocity, *game_data.player_paddle);
+            simulate_ball_paddle_collision(game_data, ball, *velocity, *game_data.ai_paddle);
 
-    if (ball.pos.y - radius < 0.0)
-    {
-        ball.pos.y = radius;
-        ball.dir.y = -ball.dir.y;
-    }
-    else if (ball.pos.y + radius > game_state.window_size.y)
-    {
-        ball.pos.y = game_state.window_size.y - radius;
-        ball.dir.y = -ball.dir.y;
+            ball.pos.x = ball.pos.x + velocity.x;
+
+            ball.pos.y = ball.pos.y + velocity.y;
+
+            if (ball.pos.x - radius < 0.0)
+            {
+                ball.pos.x = radius;
+                ball.dir.x = -ball.dir.x;
+
+                ssd.set_digit(*game_data.ai_digit, game_data.ai_digit.value + (:u8)1);
+                game_data.spawn_direction = SpawnDirection.AI;
+                set_game_state(game_data, SPAWNING);
+            }
+            else if (ball.pos.x + radius > game_data.window_size.x)
+            {
+                ball.pos.x = game_data.window_size.x - radius;
+                ball.dir.x = -ball.dir.x;
+
+                ssd.set_digit(*game_data.player_digit, game_data.player_digit.value + (:u8)1);
+                game_data.spawn_direction = SpawnDirection.PLAYER;
+                set_game_state(game_data, SPAWNING);
+            }
+
+            if (ball.pos.y - radius < 0.0)
+            {
+                ball.pos.y = radius;
+                ball.dir.y = -ball.dir.y;
+            }
+            else if (ball.pos.y + radius > game_data.window_size.y)
+            {
+                ball.pos.y = game_data.window_size.y - radius;
+                ball.dir.y = -ball.dir.y;
+            }
+        }
+
+        case SPAWNING:
+        {
+            game_data.spawn_timer = game_data.spawn_timer + input_state.dt;
+            game_data.flash_timer = game_data.flash_timer + input_state.dt;
+
+            if (game_data.flash_timer >= 0.5)
+            {
+                game_data.flash_timer = game_data.flash_timer - 0.5;
+                game_data.ball.visible = !game_data.ball.visible;
+            }
+
+            if (game_data.spawn_timer >= 3.0)
+            {
+                game_data.spawn_timer = 0.0;
+                set_game_state(game_data, PLAYING);
+            }
+        }
     }
 }
 
-simulate_ball_paddle_collision :: (gs: *GameState, ball: *Ball,
+simulate_ball_paddle_collision :: (gs: *GameData, ball: *Ball,
                                    move_vector: *Vec2, paddle: *Paddle)
 {
     radius := ball.diameter / 2.0;
@@ -430,7 +506,7 @@ simulate_ball_paddle_collision :: (gs: *GameState, ball: *Ball,
     }
 }
 
-simulate_paddle :: (game_state: *GameState, paddle: *Paddle)
+simulate_paddle :: (game_state: *GameData, paddle: *Paddle)
 {
     paddle.pos.y = paddle.pos.y + paddle.vel.y;
 
@@ -446,17 +522,75 @@ simulate_paddle :: (game_state: *GameState, paddle: *Paddle)
     }
 }
 
-is_key_down :: (input_state: *InputState, key: GLFWkey) -> bool
+set_game_state :: (game_data: *GameData, game_state: GameState)
+{
+    using GameState;
+
+    if (game_data.game_state != game_state)
+    {
+        switch (game_state)
+        {
+            case PLAYING:
+            {
+                game_data.ball.visible = true;
+                angle : float = rand.next_float(*game_data.rng, 25.0, 55.0);
+                angle = angle * 3.14159265359 / 180.0;
+                new_dir : Vec2 = { cosf(angle), sinf(angle) };
+                new_dir = vec2_normalize(new_dir);
+                if (rand.next_bool(*game_data.rng))
+                {
+                    new_dir.y = -new_dir.y;
+                }
+
+                switch (game_data.spawn_direction)
+                {
+                    case SpawnDirection.RANDOM:
+                    {
+                        if (rand.next_bool(*game_data.rng))
+                        {
+                            new_dir.x = -new_dir.x;
+                        }
+                    }
+
+                    case SpawnDirection.PLAYER:
+                    {
+                        if (new_dir.x > 0.0) new_dir.x = -new_dir.x;
+                    }
+
+                    case SpawnDirection.AI:
+                    {
+                        if (new_dir.x < 0.0) new_dir.x = -new_dir.x;
+                    }
+                }
+                game_data.ball.dir = new_dir;
+            }
+
+            case SPAWNING:
+            {
+                game_data.spawn_timer = 0.0;
+                game_data.flash_timer = 0.0;
+                game_data.ball.pos = { game_data.window_size.x / 2.0, game_data.window_size.y / 2.0 };
+
+                game_data.player_paddle.pos.y = game_data.window_size.y / 2.0;
+                game_data.ai_paddle.pos.y = game_data.window_size.y / 2.0;
+            }
+        }
+
+        game_data.game_state = game_state;
+    }
+}
+
+is_key_down :: (input_state: *InputData, key: GLFWkey) -> bool
 {
     return input_state.keys[key];
 }
 
-is_key_pressed :: (input_state: *InputState, key: GLFWkey) -> bool
+is_key_pressed :: (input_state: *InputData, key: GLFWkey) -> bool
 {
     return input_state.keys[key] && !input_state.old_keys[key];
 }
 
-is_key_released :: (input_state: *InputState, key: GLFWkey) -> bool
+is_key_released :: (input_state: *InputData, key: GLFWkey) -> bool
 {
     return !input_state.keys[key] && input_state.old_keys[key];
 }

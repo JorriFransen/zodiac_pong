@@ -152,7 +152,7 @@ draw_digit :: (digit: *Digit)
     hli : Vec2 = { bl.x + segment_width, bl.y + (digit.size.y / 2.0) };
 
     white : Vec3 = { 1.0, 1.0, 1.0 };
-    gray : Vec3 = { 0.3, 0.3, 0.3 };
+    gray : Vec3 = { 0.15, 0.15, 0.15 };
 
     p2 : Vec2 = { br.x, br.y + segment_width };
     p3 : Vec2 = { tr.x, tr.y - segment_width }
