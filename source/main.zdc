@@ -102,20 +102,20 @@ main :: () -> int
         return 9;
     }
 
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetErrorCallback(error_callback);
+    glfwSetKeyCallback(window, *key_callback);
+    glfwSetErrorCallback(*error_callback);
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
     load(*glfwGetProcAddress);
 
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, (:GLsizei)width, (:GLsizei)height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0.0, (:double)width, 0.0, (:double)height, 0.0, 1.0);
+    glOrtho(0, (:double)width, 0.0, (:double)height, 0.0, 1.0);
 
     // glClearColor(0.1, 0.3, 0.5, 1.0);
-    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClearColor(0, 0, 0, 0);
 
     gs : GameData;
     glfwSetWindowUserPointer(window, *gs.input_state);
@@ -447,13 +447,13 @@ simulate_ball_paddle_collision :: (gs: *GameData, ball: *Ball,
 {
     radius := ball.diameter / 2.0;
     ball_p1 : Vec2 = { ball.pos.x - radius, ball.pos.y + radius };
-    ball_p2 : Vec2 = vec2_add(ball_p1, move_vector);
+    ball_p2 : Vec2 = vec2_add(ball_p1, <move_vector);
     ball_p3 : Vec2 = { ball.pos.x - radius, ball.pos.y - radius };
-    ball_p4 : Vec2 = vec2_add(ball_p3, move_vector);
+    ball_p4 : Vec2 = vec2_add(ball_p3, <move_vector);
     ball_p5 : Vec2 = { ball.pos.x + radius, ball.pos.y + radius };
-    ball_p6 : Vec2 = vec2_add(ball_p5, move_vector);
+    ball_p6 : Vec2 = vec2_add(ball_p5, <move_vector);
     ball_p7 : Vec2 = { ball.pos.x + radius, ball.pos.y - radius };
-    ball_p8 : Vec2 = vec2_add(ball_p7, move_vector);
+    ball_p8 : Vec2 = vec2_add(ball_p7, <move_vector);
 
     half_paddle_width := paddle.size.x / 2.0;
     half_paddle_height := paddle.size.y / 2.0;
@@ -500,7 +500,7 @@ simulate_ball_paddle_collision :: (gs: *GameData, ball: *Ball,
     if (apply_correction)
     {
         ball.dir.x = ball.dir.x * -1.0;
-        remain := vec2_sub(move_vector, diff);
+        remain := vec2_sub(<move_vector, diff);
         remain.x = -remain.x;
         <move_vector = vec2_add(diff, remain);
     }
