@@ -114,7 +114,6 @@ main :: () -> int
     glLoadIdentity();
     glOrtho(0, width, 0, height, 0, 1);
 
-    // glClearColor(0.1, 0.3, 0.5, 1.0);
     glClearColor(0, 0, 0, 0);
 
     gs : GameData;
@@ -126,10 +125,6 @@ main :: () -> int
     gs.window_size = { width, height };
 
     gs.rng = rand.create(1234);
-    // for (i := 0; i < 100; i = i + 1)
-    // {
-    //     printf("%f\n", rand.next_float_01(*gs.rng));
-    // }
 
     digit_width : float = 40
     digit_height := digit_width * 1.75;
@@ -144,7 +139,7 @@ main :: () -> int
     gs.paddle_speed = (:float)height / 2.5;
 
     gs.ball.pos = { gs.window_size.x / 2.0, gs.window_size.y / 2.0 };
-    gs.ball.dir = vec2_normalize({ -1.0, -0.7 });
+    gs.ball.dir = vec2_normalize({ -1.0, -0.0 });
     gs.ball.speed = (:float)width * 0.5;
     gs.ball.visible = true;
     gs.spawn_timer = 0.0;
@@ -357,9 +352,13 @@ simulate :: (game_data: *GameData)
             {
                 ai_dir = -1;
             }
-            else
+            else if (game_data.ai_paddle.pos.y < game_data.ball.pos.y)
             {
                 ai_dir = 1;
+            }
+            else
+            {
+                ai_dir = 0;
             }
 
             ai_speed := dt * ai_dir * game_data.paddle_speed;
@@ -387,9 +386,7 @@ simulate_ball :: (game_data: *GameData, ball: *Ball)
             simulate_ball_paddle_collision(game_data, ball, *velocity, *game_data.player_paddle);
             simulate_ball_paddle_collision(game_data, ball, *velocity, *game_data.ai_paddle);
 
-            ball.pos.x = ball.pos.x + velocity.x;
-
-            ball.pos.y = ball.pos.y + velocity.y;
+            ball.pos = vec2_add(ball.pos, velocity);
 
             if (ball.pos.x - radius < 0)
             {
@@ -499,10 +496,22 @@ simulate_ball_paddle_collision :: (gs: *GameData, ball: *Ball,
 
     if (apply_correction)
     {
-        ball.dir.x = ball.dir.x * -1;
-        remain := vec2_sub(<move_vector, diff);
-        remain.x = -remain.x;
-        <move_vector = vec2_add(diff, remain);
+        new_x_dir := ball.dir.x * -1;
+
+        center_dist := ball.pos.y - paddle.pos.y;
+        center_ratio := center_dist / half_paddle_height;
+        if (center_ratio > 1) center_ratio = 1;
+        else if (center_ratio < -1) center_ratio = -1;
+        new_angle := center_ratio * 60;
+        new_angle = new_angle * 3.14159265359 / 180;
+
+        ball.dir.y = sinf(new_angle);
+        ball.dir.x = new_x_dir;
+        ball.dir = vec2_normalize(ball.dir);
+
+        // remain := vec2_sub(<move_vector, diff);
+        // remain.x = -remain.x;
+        // <move_vector = vec2_add(diff, remain);
     }
 }
 
@@ -534,6 +543,7 @@ set_game_state :: (game_data: *GameData, game_state: GameState)
             {
                 game_data.ball.visible = true;
                 angle : float = rand.next_float(*game_data.rng, 25, 55);
+                // angle : float = 0;
                 angle = angle * 3.14159265359 / 180;
                 new_dir : Vec2 = { cosf(angle), sinf(angle) };
                 new_dir = vec2_normalize(new_dir);
