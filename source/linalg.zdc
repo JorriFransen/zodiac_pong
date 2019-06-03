@@ -62,7 +62,7 @@ line_segments_intersect :: (a: Vec2, b: Vec2, c: Vec2, d: Vec2, result: *Vec2) -
     u := ((c.x - a.x) * r.y - (c.y - a.y) * r.x) / de;
     t := ((c.x - a.x) * s.y - (c.y - a.y) * s.x) / de;
 
-    if (0.0 <= u && u <= 1.0 && 0.0 <= t && t <= 1.0)
+    if (0 <= u && u <= 1 && 0 <= t && t <= 1)
     {
         if (result)
         {

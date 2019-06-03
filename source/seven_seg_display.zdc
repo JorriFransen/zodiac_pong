@@ -148,18 +148,18 @@ draw_digit :: (digit: *Digit)
     br  : Vec2 = { bl.x + digit.size.x, bl.y };
     tr  : Vec2 = { br.x, br.y + digit.size.y };
     tl  : Vec2 = { bl.x, bl.y + digit.size.y };
-    hri : Vec2 = { br.x - segment_width, br.y + (digit.size.y / 2.0) };
-    hli : Vec2 = { bl.x + segment_width, bl.y + (digit.size.y / 2.0) };
+    hri : Vec2 = { br.x - segment_width, br.y + (digit.size.y / 2) };
+    hli : Vec2 = { bl.x + segment_width, bl.y + (digit.size.y / 2) };
 
-    white : Vec3 = { 1.0, 1.0, 1.0 };
+    white : Vec3 = { 1, 1, 1 };
     gray : Vec3 = { 0.15, 0.15, 0.15 };
 
     p2 : Vec2 = { br.x, br.y + segment_width };
     p3 : Vec2 = { tr.x, tr.y - segment_width }
     p4 : Vec2 = { tl.x, tl.y - segment_width };
     p5 : Vec2 = { bl.x, bl.y + segment_width };
-    p6 : Vec2 = { hli.x, hli.y + segment_width / 2.0 };
-    p7 : Vec2 = { hri.x, hri.y - segment_width / 2.0 };
+    p6 : Vec2 = { hli.x, hli.y + segment_width / 2 };
+    p7 : Vec2 = { hri.x, hri.y - segment_width / 2 };
 
     if (digit.segments[0]) draw_rect( { bl, p2 }, white);
     else draw_rect ( { bl, p2 }, gray);
@@ -187,7 +187,7 @@ draw_rect :: (rect: AABB, color: Vec3)
 {
     using gl;
 
-    glColor4f(color.x, color.y, color.z, 1.0);
+    glColor4f(color.x, color.y, color.z, 1);
 
     glBegin(GL_TRIANGLES);
     glVertex2f(rect.min.x, rect.min.y);

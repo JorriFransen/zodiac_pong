@@ -112,7 +112,7 @@ main :: () -> int
     glViewport(0, 0, (:GLsizei)width, (:GLsizei)height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, (:double)width, 0.0, (:double)height, 0.0, 1.0);
+    glOrtho(0, width, 0, height, 0, 1);
 
     // glClearColor(0.1, 0.3, 0.5, 1.0);
     glClearColor(0, 0, 0, 0);
@@ -123,7 +123,7 @@ main :: () -> int
     gs.game_state = GameState.SPAWNING;
     gs.spawn_direction = SpawnDirection.RANDOM;
 
-    gs.window_size = { (:float)width, (:float)height };
+    gs.window_size = { width, height };
 
     gs.rng = rand.create(1234);
     // for (i := 0; i < 100; i = i + 1)
@@ -131,7 +131,7 @@ main :: () -> int
     //     printf("%f\n", rand.next_float_01(*gs.rng));
     // }
 
-    digit_width : float = 40.0;
+    digit_width : float = 40
     digit_height := digit_width * 1.75;
     digit_y := (:float)height - digit_height * 1.2;
     player_digit_x := (:float)width / 2.0 - digit_width * 2.0;
@@ -243,14 +243,14 @@ draw :: (window: *GLFWwindow, game_state : *GameData)
 
 draw_center_line :: (gs: *GameData)
 {
-    center_x := gs.window_size.x / 2.0;
+    center_x := gs.window_size.x / 2;
 
     line_width := gs.window_size.x * 0.01;
-    half_line_width := line_width / 2.0;
+    half_line_width := line_width / 2;
 
     segment_count := 15;
-    current_segment_y : float = 0.0;
-    segment_height := gs.window_size.y / (:float)segment_count;
+    current_segment_y : float = 0;
+    segment_height := gs.window_size.y / segment_count;
 
     draw := true;
     for (i := 0; i < segment_count; i = i + 1)
@@ -274,7 +274,7 @@ draw_ball :: (ball: *Ball)
     {
         glPointSize(ball.diameter);
 
-        glColor4f(1.0, 1.0, 1.0, 1.0);
+        glColor4f(1, 1, 1, 1);
 
         glBegin(GL_POINTS);
         glVertex2f(ball.pos.x, ball.pos.y);
@@ -284,15 +284,15 @@ draw_ball :: (ball: *Ball)
 
 draw_paddle :: (paddle : *Paddle)
 {
-    bl : Vec2 = { paddle.pos.x - (paddle.size.x / 2.0), paddle.pos.y - (paddle.size.y / 2.0) };
+    bl : Vec2 = { paddle.pos.x - (paddle.size.x / 2), paddle.pos.y - (paddle.size.y / 2) };
     tr : Vec2 = { bl.x + paddle.size.x, bl.y + paddle.size.y };
 
-    draw_rect({ bl, tr }, { 1.0, 1.0, 1.0 });
+    draw_rect({ bl, tr }, { 1, 1, 1 });
 }
 
 draw_rect :: (rect: AABB, color: Vec3)
 {
-    glColor4f(color.x, color.y, color.z, 1.0);
+    glColor4f(color.x, color.y, color.z, 1);
 
     glBegin(GL_TRIANGLES);
     glVertex2f(rect.min.x, rect.min.y);
@@ -313,15 +313,15 @@ process_inputs :: (dt: float, input_state: *InputData)
 
     using GLFWkey;
 
-    input_state.player_speed = 0.0;
+    input_state.player_speed = 0;
 
     if (is_key_down(input_state, GLFW_KEY_W))
     {
-        input_state.player_speed = input_state.player_speed + 1.0;
+        input_state.player_speed = input_state.player_speed + 1;
     }
     if (is_key_down(input_state, GLFW_KEY_S))
     {
-        input_state.player_speed = input_state.player_speed - 1.0;
+        input_state.player_speed = input_state.player_speed - 1;
     }
 
     if (is_key_down(input_state, GLFW_KEY_ESCAPE))
@@ -355,11 +355,11 @@ simulate :: (game_data: *GameData)
             ai_dir := 0.0;
             if (game_data.ai_paddle.pos.y > game_data.ball.pos.y)
             {
-                ai_dir = -1.0;
+                ai_dir = -1;
             }
             else
             {
-                ai_dir = 1.0;
+                ai_dir = 1;
             }
 
             ai_speed := dt * ai_dir * game_data.paddle_speed;
@@ -382,7 +382,7 @@ simulate_ball :: (game_data: *GameData, ball: *Ball)
             velocity := vec2_mul(ball.dir, ball.speed);
             velocity = vec2_mul(velocity, game_data.input_state.dt);
 
-            radius := ball.diameter / 2.0;
+            radius := ball.diameter / 2;
 
             simulate_ball_paddle_collision(game_data, ball, *velocity, *game_data.player_paddle);
             simulate_ball_paddle_collision(game_data, ball, *velocity, *game_data.ai_paddle);
@@ -391,7 +391,7 @@ simulate_ball :: (game_data: *GameData, ball: *Ball)
 
             ball.pos.y = ball.pos.y + velocity.y;
 
-            if (ball.pos.x - radius < 0.0)
+            if (ball.pos.x - radius < 0)
             {
                 ball.pos.x = radius;
                 ball.dir.x = -ball.dir.x;
@@ -410,7 +410,7 @@ simulate_ball :: (game_data: *GameData, ball: *Ball)
                 set_game_state(game_data, SPAWNING);
             }
 
-            if (ball.pos.y - radius < 0.0)
+            if (ball.pos.y - radius < 0)
             {
                 ball.pos.y = radius;
                 ball.dir.y = -ball.dir.y;
@@ -433,9 +433,9 @@ simulate_ball :: (game_data: *GameData, ball: *Ball)
                 game_data.ball.visible = !game_data.ball.visible;
             }
 
-            if (game_data.spawn_timer >= 3.0)
+            if (game_data.spawn_timer >= 3)
             {
-                game_data.spawn_timer = 0.0;
+                game_data.spawn_timer = 0;
                 set_game_state(game_data, PLAYING);
             }
         }
@@ -445,7 +445,7 @@ simulate_ball :: (game_data: *GameData, ball: *Ball)
 simulate_ball_paddle_collision :: (gs: *GameData, ball: *Ball,
                                    move_vector: *Vec2, paddle: *Paddle)
 {
-    radius := ball.diameter / 2.0;
+    radius := ball.diameter / 2;
     ball_p1 : Vec2 = { ball.pos.x - radius, ball.pos.y + radius };
     ball_p2 : Vec2 = vec2_add(ball_p1, <move_vector);
     ball_p3 : Vec2 = { ball.pos.x - radius, ball.pos.y - radius };
@@ -455,13 +455,13 @@ simulate_ball_paddle_collision :: (gs: *GameData, ball: *Ball,
     ball_p7 : Vec2 = { ball.pos.x + radius, ball.pos.y - radius };
     ball_p8 : Vec2 = vec2_add(ball_p7, <move_vector);
 
-    half_paddle_width := paddle.size.x / 2.0;
-    half_paddle_height := paddle.size.y / 2.0;
+    half_paddle_width := paddle.size.x / 2;
+    half_paddle_height := paddle.size.y / 2;
 
     paddle_p1 : Vec2;
     paddle_p2 : Vec2;
 
-    if (ball.dir.x < 0.0)
+    if (ball.dir.x < 0)
     {
         paddle_p1 = { paddle.pos.x + half_paddle_width, paddle.pos.y + half_paddle_height };
         paddle_p2 = { paddle.pos.x + half_paddle_width, paddle.pos.y - half_paddle_height };
@@ -499,7 +499,7 @@ simulate_ball_paddle_collision :: (gs: *GameData, ball: *Ball,
 
     if (apply_correction)
     {
-        ball.dir.x = ball.dir.x * -1.0;
+        ball.dir.x = ball.dir.x * -1;
         remain := vec2_sub(<move_vector, diff);
         remain.x = -remain.x;
         <move_vector = vec2_add(diff, remain);
@@ -510,13 +510,13 @@ simulate_paddle :: (game_state: *GameData, paddle: *Paddle)
 {
     paddle.pos.y = paddle.pos.y + paddle.vel.y;
 
-    half_height := paddle.size.y / 2.0;
+    half_height := paddle.size.y / 2;
 
     if (paddle.pos.y + half_height > game_state.window_size.y)
     {
         paddle.pos.y = game_state.window_size.y - half_height;
     }
-    else if (paddle.pos.y - half_height < 0.0)
+    else if (paddle.pos.y - half_height < 0)
     {
         paddle.pos.y = half_height;
     }
@@ -533,8 +533,8 @@ set_game_state :: (game_data: *GameData, game_state: GameState)
             case PLAYING:
             {
                 game_data.ball.visible = true;
-                angle : float = rand.next_float(*game_data.rng, 25.0, 55.0);
-                angle = angle * 3.14159265359 / 180.0;
+                angle : float = rand.next_float(*game_data.rng, 25, 55);
+                angle = angle * 3.14159265359 / 180;
                 new_dir : Vec2 = { cosf(angle), sinf(angle) };
                 new_dir = vec2_normalize(new_dir);
                 if (rand.next_bool(*game_data.rng))
@@ -554,12 +554,12 @@ set_game_state :: (game_data: *GameData, game_state: GameState)
 
                     case SpawnDirection.PLAYER:
                     {
-                        if (new_dir.x > 0.0) new_dir.x = -new_dir.x;
+                        if (new_dir.x > 0) new_dir.x = -new_dir.x;
                     }
 
                     case SpawnDirection.AI:
                     {
-                        if (new_dir.x < 0.0) new_dir.x = -new_dir.x;
+                        if (new_dir.x < 0) new_dir.x = -new_dir.x;
                     }
                 }
                 game_data.ball.dir = new_dir;
@@ -567,12 +567,13 @@ set_game_state :: (game_data: *GameData, game_state: GameState)
 
             case SPAWNING:
             {
-                game_data.spawn_timer = 0.0;
-                game_data.flash_timer = 0.0;
-                game_data.ball.pos = { game_data.window_size.x / 2.0, game_data.window_size.y / 2.0 };
+                game_data.spawn_timer = 0;
+                game_data.flash_timer = 0;
+                game_data.ball.pos = { game_data.window_size.x / 2,
+                                       game_data.window_size.y / 2 };
 
-                game_data.player_paddle.pos.y = game_data.window_size.y / 2.0;
-                game_data.ai_paddle.pos.y = game_data.window_size.y / 2.0;
+                game_data.player_paddle.pos.y = game_data.window_size.y / 2;
+                game_data.ai_paddle.pos.y = game_data.window_size.y / 2;
             }
         }
 
