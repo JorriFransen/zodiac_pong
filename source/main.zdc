@@ -84,15 +84,21 @@ GameData :: struct
     rng : rand.RandomGenerator;
 }
 
+MAX_SCORE :: 2;
+
 main :: () -> int
 {
     open_std_handles();
+
 
     if (!glfwInit())
     {
         printf("glfwInit failed\n");
         return 9;
     }
+
+    // printf("glfwGetTime(): %f\n", glfwGetTime());
+    printf("ctime: %d\n", time(null));
 
     width := 858;
     height := 525;
@@ -157,6 +163,9 @@ main :: () -> int
 
     ai_x := (:float)width - (10.0 + half_player_width);
     gs.ai_paddle = create_paddle(player_width, player_height, ai_x, player_y);
+
+    // printf("*ai_paddle: %p\n", *gs.ai_paddle);
+    // printf("*player_paddle: %p\n", *gs.player_paddle);
 
     gs.ball.diameter = player_width * 0.8;
 
@@ -233,8 +242,11 @@ draw :: (window: *GLFWwindow, game_state : *GameData)
     draw_paddle(*game_state.player_paddle);
     draw_paddle(*game_state.ai_paddle);
 
-    ssd.draw_digit(*game_state.player_digit);
-    ssd.draw_digit(*game_state.ai_digit);
+    if (game_state.player_paddle.visible)
+        ssd.draw_digit(*game_state.player_digit);
+
+    if (game_state.ai_paddle.visible)
+        ssd.draw_digit(*game_state.ai_digit);
 
     glfwSwapBuffers(window);
 }
@@ -282,10 +294,13 @@ draw_ball :: (ball: *Ball)
 
 draw_paddle :: (paddle : *Paddle)
 {
-    bl : Vec2 = { paddle.pos.x - (paddle.size.x / 2), paddle.pos.y - (paddle.size.y / 2) };
-    tr : Vec2 = { bl.x + paddle.size.x, bl.y + paddle.size.y };
+    if (paddle.visible)
+    {
+        bl : Vec2 = { paddle.pos.x - (paddle.size.x / 2), paddle.pos.y - (paddle.size.y / 2) };
+        tr : Vec2 = { bl.x + paddle.size.x, bl.y + paddle.size.y };
 
-    draw_rect({ bl, tr }, { 1, 1, 1 });
+        draw_rect({ bl, tr }, { 1, 1, 1 });
+    }
 }
 
 draw_rect :: (rect: AABB, color: Vec3)
@@ -340,12 +355,12 @@ simulate :: (game_data: *GameData)
 
     using GameState;
 
-    if ((:int)game_data.player_digit.value >= 3)
+    if ((:int)game_data.player_digit.value >= MAX_SCORE)
     {
         set_game_state(game_data, GAME_OVER);
         game_data.winning_paddle = *game_data.player_paddle;
     }
-    else if ((:int)game_data.ai_digit.value >= 3)
+    else if ((:int)game_data.ai_digit.value >= MAX_SCORE)
     {
         set_game_state(game_data, GAME_OVER);
         game_data.winning_paddle = *game_data.ai_paddle;
@@ -407,15 +422,15 @@ simulate :: (game_data: *GameData)
             if (game_data.flash_timer >= 0.5)
             {
                 game_data.flash_timer = game_data.flash_timer - 0.5;
-                wp := game_data.winning_paddle;
-                wp.visible = !wp.visible;
-                // game_data.winning_paddle.visible = !game_data.winning_paddle.visible;
+                game_data.winning_paddle.visible = !game_data.winning_paddle.visible;
             }
 
             if (game_data.spawn_timer >= 5)
             {
                 game_data.spawn_timer = 0;
-                set_game_state(game_data, PLAYING);
+                set_game_state(game_data, SPAWNING);
+                ssd.set_digit(*game_data.player_digit, 0);
+                ssd.set_digit(*game_data.ai_digit, 0);
             }
         }
     }
