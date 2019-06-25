@@ -84,7 +84,7 @@ GameData :: struct
     rng : rand.RandomGenerator;
 }
 
-MAX_SCORE :: 2;
+MAX_SCORE :: 5;
 
 main :: () -> int
 {
@@ -137,35 +137,30 @@ main :: () -> int
 
     digit_width : float = 40
     digit_height := digit_width * 1.75;
-    digit_y := (:float)height - digit_height * 1.2;
-    player_digit_x := (:float)width / 2.0 - digit_width * 2.0;
-    ai_digit_x := (:float)width / 2.0 + digit_width;
-    gs.player_digit = ssd.create_digit(player_digit_x, digit_y, digit_width, digit_height,
-                                       (:u8)0);
-    gs.ai_digit = ssd.create_digit(ai_digit_x, digit_y, digit_width, digit_height,
-                                   (:u8)0);
+    digit_y := height - digit_height * 1.2;
+    player_digit_x := width / 2.0 - digit_width * 2.0;
+    ai_digit_x := width / 2.0 + digit_width;
+    gs.player_digit = ssd.create_digit(player_digit_x, digit_y, digit_width, digit_height, 0);
+    gs.ai_digit = ssd.create_digit(ai_digit_x, digit_y, digit_width, digit_height, 0);
 
-    gs.paddle_speed = (:float)height / 2.5;
+    gs.paddle_speed = height / 2.5;
 
     gs.ball.pos = { gs.window_size.x / 2.0, gs.window_size.y / 2.0 };
     gs.ball.dir = vec2_normalize({ -1.0, -0.0 });
-    gs.ball.speed = (:float)width * 0.5;
+    gs.ball.speed = width * 0.5;
     gs.ball.visible = true;
     gs.spawn_timer = 0.0;
 
-    player_width := (:float)width * 0.02;
-    player_height := (:float)height * 0.1;
+    player_width := width * 0.02;
+    player_height := height * 0.1;
     half_player_width := player_width / 2.0;
     half_player_height := player_height / 2.0;
     player_x := 10.0 + half_player_width;
-    player_y := (:float)height / 2.0;
+    player_y := height / 2.0;
     gs.player_paddle = create_paddle(player_width, player_height, player_x, player_y);
 
-    ai_x := (:float)width - (10.0 + half_player_width);
+    ai_x := width - (10.0 + half_player_width);
     gs.ai_paddle = create_paddle(player_width, player_height, ai_x, player_y);
-
-    // printf("*ai_paddle: %p\n", *gs.ai_paddle);
-    // printf("*player_paddle: %p\n", *gs.player_paddle);
 
     gs.ball.diameter = player_width * 0.8;
 
@@ -189,9 +184,7 @@ main :: () -> int
 
 key_callback :: (window: *GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void
 {
-    using glfw_keys;
-    using GLFWkey;
-    // using glfw_keys.GLFWKey;
+    using glfw_keys.GLFWkey;
 
     input_data := (:*InputData)glfwGetWindowUserPointer(window);
 
@@ -206,7 +199,6 @@ key_callback :: (window: *GLFWwindow, key: int, scancode: int, action: int, mods
 
             case GLFW_RELEASE:
             {
-                // printf("Key released\n");
                 input_data.keys[key] = false;
             }
         }
@@ -457,7 +449,7 @@ simulate_ball :: (game_data: *GameData, ball: *Ball)
         ball.pos.x = radius;
         ball.dir.x = -ball.dir.x;
 
-        ssd.set_digit(*game_data.ai_digit, game_data.ai_digit.value + (:u8)1);
+        ssd.set_digit(*game_data.ai_digit, game_data.ai_digit.value + 1);
         game_data.spawn_direction = SpawnDirection.AI;
         set_game_state(game_data, SPAWNING);
     }
@@ -466,7 +458,7 @@ simulate_ball :: (game_data: *GameData, ball: *Ball)
         ball.pos.x = game_data.window_size.x - radius;
         ball.dir.x = -ball.dir.x;
 
-        ssd.set_digit(*game_data.player_digit, game_data.player_digit.value + (:u8)1);
+        ssd.set_digit(*game_data.player_digit, game_data.player_digit.value + 1);
         game_data.spawn_direction = SpawnDirection.PLAYER;
         set_game_state(game_data, SPAWNING);
     }

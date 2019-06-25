@@ -42,13 +42,13 @@ set_digit :: (digit: *Digit, digit_val: u8)
 {
     clear_digit(digit);
 
-    if (digit_val <= (:u8)9)
+    if (digit_val <= 9)
     {
         digit.value = digit_val;
 
         switch (digit_val)
         {
-            case (:u8)0:
+            case 0:
             {
                 digit.segments[0] = true;
                 digit.segments[1] = true;
@@ -58,13 +58,13 @@ set_digit :: (digit: *Digit, digit_val: u8)
                 digit.segments[5] = true;
             }
 
-            case (:u8)1:
+            case 1:
             {
                 digit.segments[1] = true;
                 digit.segments[2] = true;
             }
 
-            case (:u8)2:
+            case 2:
             {
                 digit.segments[0] = true;
                 digit.segments[2] = true;
@@ -73,7 +73,7 @@ set_digit :: (digit: *Digit, digit_val: u8)
                 digit.segments[6] = true;
             }
 
-            case (:u8)3:
+            case 3:
             {
                 digit.segments[0] = true;
                 digit.segments[1] = true;
@@ -82,7 +82,7 @@ set_digit :: (digit: *Digit, digit_val: u8)
                 digit.segments[6] = true;
             }
 
-            case (:u8)4:
+            case 4:
             {
                 digit.segments[1] = true;
                 digit.segments[2] = true;
@@ -90,7 +90,7 @@ set_digit :: (digit: *Digit, digit_val: u8)
                 digit.segments[6] = true;
             }
 
-            case (:u8)5:
+            case 5:
             {
                 digit.segments[0] = true;
                 digit.segments[1] = true;
@@ -99,35 +99,35 @@ set_digit :: (digit: *Digit, digit_val: u8)
                 digit.segments[6] = true;
             }
 
-            case (:u8)6:
+            case 6:
             {
                 digit.segments[0] = true;
                 digit.segments[1] = true;
-                digit.segments[3] = true;
-                digit.segments[4] = true;
-                digit.segments[5] = true;
-                digit.segments[6] = true;
-            }
-
-            case (:u8)7:
-            {
-                digit.segments[1] = true;
-                digit.segments[2] = true;
-                digit.segments[3] = true;
-            }
-
-            case (:u8)8:
-            {
-                digit.segments[0] = true;
-                digit.segments[1] = true;
-                digit.segments[2] = true;
                 digit.segments[3] = true;
                 digit.segments[4] = true;
                 digit.segments[5] = true;
                 digit.segments[6] = true;
             }
 
-            case (:u8)9:
+            case 7:
+            {
+                digit.segments[1] = true;
+                digit.segments[2] = true;
+                digit.segments[3] = true;
+            }
+
+            case 8:
+            {
+                digit.segments[0] = true;
+                digit.segments[1] = true;
+                digit.segments[2] = true;
+                digit.segments[3] = true;
+                digit.segments[4] = true;
+                digit.segments[5] = true;
+                digit.segments[6] = true;
+            }
+
+            case 9:
             {
                 digit.segments[0] = true;
                 digit.segments[1] = true;
@@ -142,7 +142,7 @@ set_digit :: (digit: *Digit, digit_val: u8)
 
 draw_digit :: (digit: *Digit)
 {
-    segment_width : float = 7.5;
+    segment_width := 7.5;
 
     bl  : Vec2 = digit.pos;
     br  : Vec2 = { bl.x + digit.size.x, bl.y };
