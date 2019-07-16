@@ -45,8 +45,8 @@ vec2_mul :: (a: Vec2, b: float)
 vec2_normalize :: (v: Vec2)
 {
     length := vec2_length(v);
-    v.x = v.x / length;
-    v.y = v.y / length;
+    v.x /= length;
+    v.y /= length;
 
     return v;
 }
@@ -72,7 +72,7 @@ line_segments_intersect :: (a: Vec2, b: Vec2, c: Vec2, d: Vec2, result: *Vec2) -
         {
             // res := vec2_mul(r, t);
             res := r * t;
-            res = res + a;
+            res += a;
             <result = res;
         }
         return true;

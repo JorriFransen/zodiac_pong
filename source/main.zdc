@@ -255,7 +255,7 @@ draw_center_line :: (gs: *GameData)
     segment_height := gs.window_size.y / segment_count;
 
     draw := true;
-    for (i := 0; i < segment_count; i = i + 1)
+    for (i := 0; i < segment_count; i += 1)
     {
         if (draw)
         {
@@ -265,7 +265,7 @@ draw_center_line :: (gs: *GameData)
 
         }
 
-        current_segment_y = current_segment_y + segment_height;
+        current_segment_y += segment_height;
         draw = !draw;
     }
 }
@@ -322,11 +322,11 @@ process_inputs :: (dt: float, input_state: *InputData)
 
     if (is_key_down(input_state, GLFW_KEY_W))
     {
-        input_state.player_speed = input_state.player_speed + 1;
+        input_state.player_speed += 1;
     }
     if (is_key_down(input_state, GLFW_KEY_S))
     {
-        input_state.player_speed = input_state.player_speed - 1;
+        input_state.player_speed -= 1;
     }
 
     if (is_key_down(input_state, GLFW_KEY_ESCAPE))
@@ -334,7 +334,7 @@ process_inputs :: (dt: float, input_state: *InputData)
         input_state.exit_requested = true;
     }
 
-    for (i := 0; i < array_length(input_state.keys); i = i + 1)
+    for (i := 0; i < array_length(input_state.keys); i += 1)
     {
         input_state.old_keys[i] = input_state.keys[i];
     }
@@ -395,7 +395,7 @@ simulate :: (game_data: *GameData)
 
             if (game_data.flash_timer >= 0.5)
             {
-                game_data.flash_timer = game_data.flash_timer - 0.5;
+                game_data.flash_timer -= 0.5;
                 game_data.ball.visible = !game_data.ball.visible;
             }
 
@@ -413,7 +413,7 @@ simulate :: (game_data: *GameData)
 
             if (game_data.flash_timer >= 0.5)
             {
-                game_data.flash_timer = game_data.flash_timer - 0.5;
+                game_data.flash_timer -= 0.5;
                 game_data.winning_paddle.visible = !game_data.winning_paddle.visible;
             }
 
@@ -426,7 +426,6 @@ simulate :: (game_data: *GameData)
             }
         }
     }
-
 }
 
 simulate_ball :: (game_data: *GameData, ball: *Ball)
@@ -434,15 +433,14 @@ simulate_ball :: (game_data: *GameData, ball: *Ball)
     using GameState;
     input_state := *game_data.input_state;
 
-    velocity := ball.dir * ball.speed;
-    velocity = velocity * game_data.input_state.dt;
+    velocity := ball.dir * ball.speed * game_data.input_state.dt;
 
     radius := ball.diameter / 2;
 
     simulate_ball_paddle_collision(game_data, ball, *velocity, *game_data.player_paddle);
     simulate_ball_paddle_collision(game_data, ball, *velocity, *game_data.ai_paddle);
 
-    ball.pos = ball.pos + velocity;
+    ball.pos += velocity;
 
     if (ball.pos.x - radius < 0)
     {
@@ -519,7 +517,8 @@ simulate_ball_paddle_collision :: (gs: *GameData, ball: *Ball,
     {
         diff = intersect - ball_p2;
         apply_correction = true;
-    } else if (line_segments_intersect(ball_p5, ball_p6, paddle_p1, paddle_p2, *intersect))
+    }
+    else if (line_segments_intersect(ball_p5, ball_p6, paddle_p1, paddle_p2, *intersect))
     {
         diff = intersect - ball_p5;
         apply_correction = true;
@@ -538,8 +537,7 @@ simulate_ball_paddle_collision :: (gs: *GameData, ball: *Ball,
         center_ratio := center_dist / half_paddle_height;
         if (center_ratio > 1) center_ratio = 1;
         else if (center_ratio < -1) center_ratio = -1;
-        new_angle := center_ratio * 60;
-        new_angle = new_angle * 3.14159265359 / 180;
+        new_angle := center_ratio * 60 * 3.14159265359 / 180;
 
         ball.dir.y = sinf(new_angle);
         ball.dir.x = new_x_dir;
