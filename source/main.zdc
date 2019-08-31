@@ -131,7 +131,7 @@ main :: () -> int
     gs.game_state = GameState.SPAWNING;
     gs.spawn_direction = SpawnDirection.RANDOM;
 
-    gs.window_size = { width, height };
+    gs.window_size = { (:float)width, (:float)height };
 
     gs.rng = rand.create(1234);
 
