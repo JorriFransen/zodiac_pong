@@ -433,16 +433,15 @@ simulate_ball :: (game_data: *GameData, ball: *Ball)
     using GameState;
     input_state := *game_data.input_state;
 
-    velocity := vec2_mul(ball.dir, ball.speed * game_data.input_state.dt);
-    // velocity := ball.dir * ball.speed * game_data.input_state.dt;
+    // velocity := vec2_mul(ball.dir, ball.speed * game_data.input_state.dt);
+    velocity := ball.dir * ball.speed * game_data.input_state.dt;
 
     radius := ball.diameter / 2;
 
     simulate_ball_paddle_collision(game_data, ball, *velocity, *game_data.player_paddle);
     simulate_ball_paddle_collision(game_data, ball, *velocity, *game_data.ai_paddle);
 
-    // ball.pos += velocity;
-    ball.pos = vec2_add(ball.pos, velocity);
+    ball.pos += velocity;
 
     if (ball.pos.x - radius < 0)
     {
@@ -480,17 +479,13 @@ simulate_ball_paddle_collision :: (gs: *GameData, ball: *Ball,
 {
     radius := ball.diameter / 2;
     ball_p1 : Vec2 = { ball.pos.x - radius, ball.pos.y + radius };
-    // ball_p2 : Vec2 = ball_p1 + <move_vector;
-    ball_p2 : Vec2 = vec2_add(ball_p1, <move_vector);
+    ball_p2 : Vec2 = ball_p1 + <move_vector;
     ball_p3 : Vec2 = { ball.pos.x - radius, ball.pos.y - radius };
-    // ball_p4 : Vec2 = ball_p3 + <move_vector;
-    ball_p4 : Vec2 = vec2_add(ball_p3, <move_vector);
+    ball_p4 : Vec2 = ball_p3 + <move_vector;
     ball_p5 : Vec2 = { ball.pos.x + radius, ball.pos.y + radius };
-    // ball_p6 : Vec2 = ball_p5 + <move_vector;
-    ball_p6 : Vec2 = vec2_add(ball_p5, <move_vector);
+    ball_p6 : Vec2 = ball_p5 + <move_vector;
     ball_p7 : Vec2 = { ball.pos.x + radius, ball.pos.y - radius };
-    // ball_p8 : Vec2 = ball_p7 + <move_vector;
-    ball_p8 : Vec2 = vec2_add(ball_p7, <move_vector);
+    ball_p8 : Vec2 = ball_p7 + <move_vector;
 
     half_paddle_width := paddle.size.x / 2;
     half_paddle_height := paddle.size.y / 2;
@@ -516,26 +511,22 @@ simulate_ball_paddle_collision :: (gs: *GameData, ball: *Ball,
 
     if (line_segments_intersect(ball_p1, ball_p2, paddle_p1, paddle_p2, *intersect))
     {
-        // diff = intersect - ball_p1;
-        diff = vec2_sub(intersect, ball_p1);
+        diff = intersect - ball_p1;
         apply_correction = true;
     }
     else if (line_segments_intersect(ball_p3, ball_p4, paddle_p1, paddle_p2, *intersect))
     {
-        // diff = intersect - ball_p2;
-        diff = vec2_sub(intersect, ball_p2);
+        diff = intersect - ball_p2;
         apply_correction = true;
     }
     else if (line_segments_intersect(ball_p5, ball_p6, paddle_p1, paddle_p2, *intersect))
     {
-        // diff = intersect - ball_p5;
-        diff = vec2_sub(intersect, ball_p5);
+        diff = intersect - ball_p5;
         apply_correction = true;
     }
     else if (line_segments_intersect(ball_p7, ball_p8, paddle_p1, paddle_p2, *intersect))
     {
-        // diff = intersect - ball_p7;
-        diff = vec2_sub(intersect, ball_p7);
+        diff = intersect - ball_p7;
         apply_correction = true;
     }
 

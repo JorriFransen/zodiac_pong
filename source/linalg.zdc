@@ -70,10 +70,10 @@ line_segments_intersect :: (a: Vec2, b: Vec2, c: Vec2, d: Vec2, result: *Vec2) -
     {
         if (result)
         {
-            res := vec2_mul(r, t);
-            // res := r * t;
-            // res += a;
-            res = vec2_add(res, a);
+            // res := vec2_mul(r, t);
+            res := r * t;
+            res += a;
+            // res = vec2_add(res, a);
             <result = res;
         }
         return true;
