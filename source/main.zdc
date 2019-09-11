@@ -254,10 +254,10 @@ draw_center_line :: (gs: *GameData)
     current_segment_y : float = 0;
     segment_height := gs.window_size.y / segment_count;
 
-    draw := true;
+    draw_seg := true;
     for (i := 0; i < segment_count; i += 1)
     {
-        if (draw)
+        if (draw_seg)
         {
             min : Vec2 = { center_x - half_line_width, current_segment_y };
             max : Vec2 = { center_x + half_line_width, current_segment_y + segment_height };
@@ -266,7 +266,7 @@ draw_center_line :: (gs: *GameData)
         }
 
         current_segment_y += segment_height;
-        draw = !draw;
+        draw_seg = !draw_seg;
     }
 }
 
