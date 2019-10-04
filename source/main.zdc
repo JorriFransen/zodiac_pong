@@ -205,13 +205,13 @@ key_callback :: (window: *GLFWwindow, key: int, scancode: int, action: int, mods
     }
     else
     {
-        fprintf(stderr, "No window user pointer!!!\n");
+        fprintf(_stderr, "No window user pointer!!!\n");
     }
 }
 
 error_callback :: (error: int, description: *u8) -> void
 {
-    fprintf(stderr, "GLFW error:%lu:s\n", error, description);
+    fprintf(_stderr, "GLFW error:%lu:s\n", error, description);
 }
 
 create_paddle :: (width: float, height: float, x: float, y: float) -> Paddle
@@ -290,7 +290,6 @@ draw_paddle :: (paddle : *Paddle)
 {
     if (paddle.visible)
     {
-        _c.printf("paddle visible\n");
         bl : Vec2 = { paddle.pos.x - (paddle.size.x / 2), paddle.pos.y - (paddle.size.y / 2) };
         tr : Vec2 = { bl.x + paddle.size.x, bl.y + paddle.size.y };
 
