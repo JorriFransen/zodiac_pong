@@ -220,6 +220,7 @@ create_paddle :: (width: float, height: float, x: float, y: float) -> Paddle
     result.size = { width, height };
     result.pos = { x, y };
     result.vel = { 0.0, 0.0 };
+    result.visible = true;
 
     return result;
 }
@@ -231,6 +232,7 @@ draw :: (window: *GLFWwindow, game_state : *GameData)
     draw_center_line(game_state);
 
     draw_ball(*game_state.ball);
+
     draw_paddle(*game_state.player_paddle);
     draw_paddle(*game_state.ai_paddle);
 
@@ -288,6 +290,7 @@ draw_paddle :: (paddle : *Paddle)
 {
     if (paddle.visible)
     {
+        _c.printf("paddle visible\n");
         bl : Vec2 = { paddle.pos.x - (paddle.size.x / 2), paddle.pos.y - (paddle.size.y / 2) };
         tr : Vec2 = { bl.x + paddle.size.x, bl.y + paddle.size.y };
 
