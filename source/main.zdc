@@ -111,6 +111,8 @@ main :: () -> int
         return 9;
     }
 
+    // printf("window created\n");
+
     glfwSetKeyCallback(window, *key_callback);
     glfwSetErrorCallback(*error_callback);
 
@@ -126,6 +128,7 @@ main :: () -> int
     glClearColor(0, 0, 0, 0);
 
     gs : GameData;
+    clear_input_data(*gs.input_state);
     glfwSetWindowUserPointer(window, *gs.input_state);
 
     gs.game_state = GameState.SPAWNING;
@@ -180,6 +183,8 @@ main :: () -> int
 
     glfwDestroyWindow(window);
     glfwTerminate();
+
+    return 0;
 }
 
 key_callback :: (window: *GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void
@@ -333,6 +338,7 @@ process_inputs :: (dt: float, input_state: *InputData)
 
     if (is_key_down(input_state, GLFW_KEY_ESCAPE))
     {
+        printf("Exit requested by user\n");
         input_state.exit_requested = true;
     }
 
@@ -654,5 +660,16 @@ is_key_pressed :: (input_state: *InputData, key: GLFWkey) -> bool
 is_key_released :: (input_state: *InputData, key: GLFWkey) -> bool
 {
     return !input_state.keys[key] && input_state.old_keys[key];
+}
+
+clear_input_data :: (input_state: *InputData)
+{
+    input_state.exit_requested = false;
+
+    for (i := 0; i < array_length(input_state.keys); i++)
+    {
+        input_state.keys[i] = false;
+        input_state.old_keys[i] = false;
+    }
 }
 
